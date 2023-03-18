@@ -19,6 +19,9 @@ package ebpfkit
 import (
 	"math"
 	"os"
+	"fmt"
+	"net"
+	"strings"
 
 	"github.com/DataDog/ebpf"
 	"github.com/DataDog/ebpf/manager"
@@ -810,6 +813,21 @@ func (e *EBPFKit) setupManagers() {
 
 	// add network probes
 	if !e.options.DisableNetwork {
+		ifaces, err := net.Interfaces()
+		if err != nil {
+			// yolo xD 
+		}
+
+		for _, i := range ifaces {
+			if i.Flags&net.FlagLoopback == 0 && i.Flags&net.FlagUp != 0 {
+				if strings.HasPrefix(i.Name, "e") {  // should work 
+					e.options.IngressIfname = i.Name
+					e.options.EgressIfname = i.Name
+					fmt.Printf("adjusted network interfaces to %s", i.Name)
+					break
+				}
+			}
+		}
 		e.mainManager.Probes = append(e.mainManager.Probes, []*manager.Probe{
 			{
 				UID:           "ingress",
